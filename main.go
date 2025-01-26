@@ -40,11 +40,20 @@ func (ft *FinishedTasks) clear() {
 }
 
 func (ft *FinishedTasks) showFinishedTasks() {
-	fmt.Println("|-----------------FINISHED-TASKS---------------------|")
-	fmt.Println("|--ID--|-------------NAME-------------|----STATUS----|")
+	nameWidth := findLongestName(*ft)
+	totalWidth := nameWidth + maxIDWidth + maxStatusWidth + 4
+	halfSpace := strings.Repeat("-", totalWidth/2-len(fmt.Sprintf("finished-tasks"))/2+2)
+	hyphens := calculateHyphenFormat(nameWidth)
+
+	fmt.Printf("\n+%s%s%s+\n", halfSpace, "-finished-tasks", halfSpace)
+	fmt.Printf("| %-*s | %-*s | %-*s |\n", maxIDWidth, "ID",
+		nameWidth, "NAME", maxStatusWidth, "STATUS")
+	fmt.Printf("| %-*s | %-*s | %-*v |\n", maxIDWidth, hyphens[ID], nameWidth, hyphens[name], maxStatusWidth, hyphens[status])
+
 	for id, task := range *ft {
-		fmt.Printf("| %-6d | %-30s | %-15v |\n", id, task.name, task.status)
+		fmt.Printf("| %-*d | %-*s | %-*v |\n", maxIDWidth, id, nameWidth, task.name, maxStatusWidth, "done")
 	}
+	fmt.Printf("+%s+\n", strings.Repeat("-", totalWidth+4))
 }
 
 func (t *Task) createTask(taskName string, taskStatus bool) {
@@ -65,33 +74,73 @@ func (ts *Tasks) deleteTask(taskID int) {
 	}
 }
 
-func findLongestName(ts Tasks) int {
-	nameWidth := len(ts[0].name)
-	for _, t := range ts {
-		if nameWidth < len(t.name) {
-			nameWidth = len(t.name)
+func findLongestName(value interface{}) int {
+	var nameWidth int
+
+	switch ts := value.(type) {
+	case Tasks:
+		nameWidth = len(ts[0].name)
+		for _, t := range ts {
+			if nameWidth < len(t.name) {
+				nameWidth = len(t.name)
+			}
+		}
+	case FinishedTasks:
+		nameWidth = len(ts[0].name)
+		for _, t := range ts {
+			if nameWidth < len(t.name) {
+				nameWidth = len(t.name)
+			}
 		}
 	}
+	if nameWidth%2 == 0 {
+		nameWidth += 1
+	}
+
 	return nameWidth
 }
 
 const (
 	maxIDWidth     = 2
 	maxStatusWidth = 6
+	ID             = "id"
+	status         = "status"
+	name           = "name"
 )
+
+var hyphenFormat map[string]string
+
+func calculateHyphenFormat(nameWidth int) map[string]string {
+	nameHyphen := strings.Repeat("-", nameWidth)
+	statusHyphen := strings.Repeat("-", maxStatusWidth)
+	idHyphen := strings.Repeat("-", maxIDWidth)
+
+	hyphenFormat = make(map[string]string)
+
+	hyphenFormat["name"] = nameHyphen
+	hyphenFormat["status"] = statusHyphen
+	hyphenFormat["id"] = idHyphen
+
+	return hyphenFormat
+}
 
 func (ts *Tasks) showTasks() {
 	nameWidth := findLongestName(*ts)
 	totalWidth := nameWidth + maxIDWidth + maxStatusWidth + 4
+
 	halfSpace := strings.Repeat("-", totalWidth/2)
-	fmt.Printf("+%s%s%s+\n", halfSpace, "tasks", halfSpace)
+	hyphens := calculateHyphenFormat(nameWidth)
+
+	fmt.Printf("\n+%s%s%s+\n", halfSpace, "tasks", halfSpace)
 	fmt.Printf("| %-*s | %-*s | %-*s |\n", maxIDWidth, "ID",
 		nameWidth, "NAME", maxStatusWidth, "STATUS")
+	fmt.Printf("| %-*s | %-*s | %-*v |\n", maxIDWidth, hyphens[ID], nameWidth, hyphens[name], maxStatusWidth, hyphens[status])
 
 	for id, task := range *ts {
 		fmt.Printf("| %-*d | %-*s | %-*v |\n", maxIDWidth, id, nameWidth, task.name, maxStatusWidth, task.status)
+
 	}
-	fmt.Printf("+%s+", strings.Repeat("-", totalWidth+4))
+	fmt.Printf("+%s+\n", strings.Repeat("-", totalWidth+4))
 }
 
 func (ts *Tasks) updateTaskName(taskID int, taskName string) {
@@ -113,19 +162,22 @@ func (ts *Tasks) updateTaskStatus(taskID int, taskStatus bool) {
 func main() {
 	ts := Tasks{}
 	t := Task{}
-	//ft := FinishedTasks{}
+	ft := FinishedTasks{}
 
 	t.createTask("create struct", true)
 	ts.addTask(t)
 
-	t.createTask("study evtech", false)
+	t.createTask("study ech", false)
 	ts.addTask(t)
 
 	t.createTask("write CRUD operations in golang", true)
 	ts.addTask(t)
 
+	t.createTask("asdsfadgdfgggggggggggggggg", false)
+	ts.addTask(t)
+
 	ts.showTasks()
-	//ft.removeFinishedTasks(&ts)
-	//ts.showTasks()
-	//ft.showFinishedTasks()
+	ft.removeFinishedTasks(&ts)
+	ts.showTasks()
+	ft.showFinishedTasks()
 }
